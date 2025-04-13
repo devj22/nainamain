@@ -12,7 +12,8 @@
     "noUnusedParameters": false,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "rootDir": "."
   },
   "include": ["server/**/*", "shared/**/*"],
   "exclude": ["node_modules"]

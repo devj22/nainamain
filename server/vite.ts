@@ -5,12 +5,22 @@ import { fileURLToPath } from "url";
 import { type Server } from "http";
 import viteConfig from "../vite.config.js";
 import { nanoid } from "nanoid";
-import type { Logger } from 'vite';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const viteLogger: Logger = {
+// Define a simple logger interface
+interface SimpleLogger {
+  info: (message: string) => void;
+  warn: (message: string) => void;
+  error: (message: string) => void;
+  clearScreen: () => void;
+  hasErrorLogged: () => boolean;
+  hasWarned: boolean;
+  warnOnce: (message: string) => void;
+}
+
+const viteLogger: SimpleLogger = {
   info: console.info?.bind(console),
   warn: console.warn?.bind(console),
   error: console.error?.bind(console),
@@ -38,8 +48,9 @@ export async function setupVite(app: Express, server: Server) {
     allowedHosts: ['localhost', '127.0.0.1'] as string[],
   };
 
-  // Import Vite as ESM
-  const vite = await (await import('vite')).createServer({
+  // Dynamic import with proper type casting
+  const { createServer } = await import('vite') as any;
+  const viteServer = await createServer({
     ...viteConfig,
     configFile: false,
     customLogger: viteLogger,
@@ -47,7 +58,7 @@ export async function setupVite(app: Express, server: Server) {
     appType: "custom",
   });
 
-  app.use(vite.middlewares);
+  app.use(viteServer.middlewares);
   app.use("*", async (req, res, next) => {
     const url = req.originalUrl;
 
@@ -65,24 +76,39 @@ export async function setupVite(app: Express, server: Server) {
         `src="/src/main.tsx"`,
         `src="/src/main.tsx?v=${nanoid()}"`,
       );
-      const page = await vite.transformIndexHtml(url, template);
+      const page = await viteServer.transformIndexHtml(url, template);
       res.status(200).set({ "Content-Type": "text/html" }).end(page);
     } catch (e) {
-      vite.ssrFixStacktrace(e as Error);
+      viteServer.ssrFixStacktrace(e as Error);
       next(e);
     }
   });
 }
 
 export function serveStatic(app: Express) {
-  const distPath = path.resolve(__dirname, "..", "public");
+  // In production, the client build is in the dist/public directory
+  const distPath = path.resolve(__dirname, "..", "dist", "public");
 
   if (!fs.existsSync(distPath)) {
-    throw new Error(
-      `Could not find the build directory: ${distPath}, make sure to build the client first`,
-    );
+    console.error(`Could not find the build directory: ${distPath}`);
+    // Fallback to the public directory if dist/public doesn't exist
+    const publicPath = path.resolve(__dirname, "..", "public");
+    if (!fs.existsSync(publicPath)) {
+      throw new Error(
+        `Could not find the build directory: ${distPath} or ${publicPath}`,
+      );
+    }
+    console.log(`Using fallback public directory: ${publicPath}`);
+    app.use(express.static(publicPath));
+    
+    // fall through to index.html if the file doesn't exist
+    app.use("*", (_req, res) => {
+      res.sendFile(path.resolve(publicPath, "index.html"));
+    });
+    return;
   }
 
+  console.log(`Serving static files from: ${distPath}`);
   app.use(express.static(distPath));
 
   // fall through to index.html if the file doesn't exist

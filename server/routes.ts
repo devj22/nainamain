@@ -53,13 +53,15 @@ function authMiddleware(req: Request, res: Response, next: Function) {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // API routes (prefix with /api)
-  const apiRouter = express.Router();
+  const server = createServer(app);
 
   // Health check endpoint
-  apiRouter.get('/health', (req: Request, res: Response) => {
-    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  app.get('/api/health', (req: Request, res: Response) => {
+    res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
   });
+
+  // API routes (prefix with /api)
+  const apiRouter = express.Router();
 
   // Auth routes
   apiRouter.post('/auth/login', async (req: Request, res: Response) => {
@@ -505,6 +507,5 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.use('/api', apiRouter);
 
-  const httpServer = createServer(app);
-  return httpServer;
+  return server;
 }

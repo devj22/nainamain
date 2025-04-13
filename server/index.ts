@@ -13,7 +13,8 @@ import cors from 'cors';
 // Log environment variables (excluding sensitive data)
 console.log('Environment:', {
   NODE_ENV: process.env.NODE_ENV,
-  DATABASE_URL: process.env.DATABASE_URL ? '[CONFIGURED]' : '[MISSING]'
+  DATABASE_URL: process.env.DATABASE_URL ? '[CONFIGURED]' : '[MISSING]',
+  JWT_SECRET: process.env.JWT_SECRET ? '[CONFIGURED]' : '[MISSING]'
 });
 
 const app = express();
@@ -91,9 +92,9 @@ app.use((req, res, next) => {
   // ALWAYS serve the app on port 5000
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
-  const port = 5002;
+  const port = process.env.PORT || 5002;
   server.listen({
-    port,
+    port: Number(port),
     host: "0.0.0.0",
     reusePort: true,
   }, () => {

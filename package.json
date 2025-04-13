@@ -11,7 +11,7 @@
     "build": "npm run build:client && npm run build:server",
     "build:client": "vite build",
     "build:server": "tsc -p tsconfig.server.json && npm run copy-files",
-    "copy-files": "cp -r server/db dist/server/ && cp -r shared dist/ && cp package.json dist/",
+    "copy-files": "mkdir -p dist/server && cp -r server/db dist/server/ && cp -r shared dist/ && cp package.json dist/",
     "start": "cd dist && node server/index.js",
     "preview": "vite preview"
   },
