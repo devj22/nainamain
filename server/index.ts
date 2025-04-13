@@ -5,7 +5,20 @@ import { checkDatabaseConnection } from "./db.js";
 import cors from 'cors';
 
 const app = express();
-app.use(cors());
+
+// Configure CORS
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' 
+    ? [
+        'https://nainamain.onrender.com',      // Frontend URL on Render
+        'https://nainaland-api.onrender.com'   // Backend URL on Render
+      ]
+    : ['http://localhost:5002', 'http://localhost:5173', 'http://127.0.0.1:5173'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
