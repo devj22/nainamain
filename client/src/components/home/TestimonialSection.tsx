@@ -1,94 +1,63 @@
-import { useQuery } from "@tanstack/react-query";
-import TestimonialCard from "@/components/ui/testimonial-card";
-import { Testimonial } from "@shared/schema";
-import { useRef } from "react";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+
+const testimonials = [
+  {
+    content: "Nainaland Deals made my dream of owning a plot in Panvel come true. The team was professional, transparent, and very helpful throughout the process.",
+    author: "Rohit Sharma",
+    location: "Navi Mumbai",
+    rating: 5
+  },
+  {
+    content: "I was nervous about legal issues, but Nainaland Deals handled everything smoothly. I bought land in Khalapur with complete confidence.",
+    author: "Priya Desai",
+    location: "Pune",
+    rating: 5
+  },
+  {
+    content: "Great experience! The team helped me find a great investment opportunity in Karjat. Highly recommend their services.",
+    author: "Vikram Joshi",
+    location: "Thane",
+    rating: 5
+  },
+  {
+    content: "Professional service, clear documentation, and great property options. Nainaland Deals is definitely one of the best in the region.",
+    author: "Meera Patil",
+    location: "Mumbai",
+    rating: 5
+  }
+];
 
 const TestimonialSection = () => {
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  
-  const { data: testimonials, isLoading, error } = useQuery<Testimonial[]>({
-    queryKey: ['/api/testimonials'],
-  });
-
-  const scroll = (direction: 'left' | 'right') => {
-    if (scrollContainerRef.current) {
-      const { current } = scrollContainerRef;
-      const scrollAmount = current.clientWidth / 2;
-      
-      if (direction === 'left') {
-        current.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
-      } else {
-        current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-      }
-    }
-  };
-
   return (
-    <section className="py-20 bg-white">
+    <section className="py-16 bg-gray-50">
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold mb-4">What Our Clients Say</h2>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            Hear from our satisfied customers who found their ideal land properties with Nainaland Deals.
+            Hear from our satisfied clients about their experience with Nainaland Deals
           </p>
         </div>
         
-        {isLoading ? (
-          <div className="text-center py-10">Loading testimonials...</div>
-        ) : error ? (
-          <div className="text-center py-10 text-red-500">Error loading testimonials</div>
-        ) : (
-          <>
-            <div className="relative">
-              <div 
-                ref={scrollContainerRef} 
-                className="flex overflow-x-auto pb-8 -mx-4 px-4 snap-x snap-mandatory scroll-smooth hide-scrollbar"
-                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-              >
-                {testimonials && testimonials.length > 0 ? (
-                  testimonials.map((testimonial) => (
-                    <div 
-                      key={testimonial.id} 
-                      className="flex-shrink-0 w-full md:w-1/2 lg:w-1/3 px-4 snap-start"
-                    >
-                      <TestimonialCard testimonial={testimonial} />
-                    </div>
-                  ))
-                ) : (
-                  <div className="w-full text-center py-10">
-                    No testimonials found.
-                  </div>
-                )}
-              </div>
-              
-              {testimonials && testimonials.length > 1 && (
-                <div className="flex justify-center mt-6 space-x-4">
-                  <Button 
-                    variant="outline" 
-                    onClick={() => scroll('left')}
-                    className="rounded-full w-10 h-10 p-0 flex items-center justify-center"
-                  >
-                    <i className="fas fa-chevron-left"></i>
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => scroll('right')}
-                    className="rounded-full w-10 h-10 p-0 flex items-center justify-center"
-                  >
-                    <i className="fas fa-chevron-right"></i>
-                  </Button>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-6xl mx-auto">
+          {testimonials.map((testimonial, index) => (
+            <Card key={index} className="bg-white">
+              <CardContent className="p-6">
+                <div className="mb-4">
+                  {[...Array(testimonial.rating)].map((_, i) => (
+                    <span key={i} className="text-yellow-400 text-xl">★</span>
+                  ))}
                 </div>
-              )}
-            </div>
-            
-            <style jsx>{`
-              .hide-scrollbar::-webkit-scrollbar {
-                display: none;
-              }
-            `}</style>
-          </>
-        )}
+                <p className="text-gray-700 mb-6 italic">"{testimonial.content}"</p>
+                <div className="flex items-center">
+                  <div>
+                    <p className="font-semibold">— {testimonial.author}</p>
+                    <p className="text-gray-500 text-sm">{testimonial.location}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
     </section>
   );

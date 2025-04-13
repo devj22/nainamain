@@ -2,14 +2,23 @@ import express, { type Express } from "express";
 import fs from "fs";
 import path, { dirname } from "path";
 import { fileURLToPath } from "url";
-import { createServer as createViteServer, createLogger } from "vite";
+import { type Server } from "http";
+import viteConfig from "../vite.config.js";
+import { nanoid } from "nanoid";
+import type { Logger } from 'vite';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-import { type Server } from "http";
-import viteConfig from "../vite.config";
-import { nanoid } from "nanoid";
 
-const viteLogger = createLogger();
+const viteLogger: Logger = {
+  info: console.info?.bind(console),
+  warn: console.warn?.bind(console),
+  error: console.error?.bind(console),
+  clearScreen: () => {},
+  hasErrorLogged: () => false,
+  hasWarned: false,
+  warnOnce: console.warn?.bind(console),
+};
 
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
@@ -24,21 +33,16 @@ export function log(message: string, source = "express") {
 
 export async function setupVite(app: Express, server: Server) {
   const serverOptions = {
-    middlewareMode: true,
+    middlewareMode: true as const,
     hmr: { server },
-    allowedHosts: true,
+    allowedHosts: ['localhost', '127.0.0.1'] as string[],
   };
 
-  const vite = await createViteServer({
+  // Import Vite as ESM
+  const vite = await (await import('vite')).createServer({
     ...viteConfig,
     configFile: false,
-    customLogger: {
-      ...viteLogger,
-      error: (msg, options) => {
-        viteLogger.error(msg, options);
-        process.exit(1);
-      },
-    },
+    customLogger: viteLogger,
     server: serverOptions,
     appType: "custom",
   });
@@ -71,7 +75,7 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 export function serveStatic(app: Express) {
-  const distPath = path.resolve(__dirname, "public");
+  const distPath = path.resolve(__dirname, "..", "public");
 
   if (!fs.existsSync(distPath)) {
     throw new Error(

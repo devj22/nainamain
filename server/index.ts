@@ -1,8 +1,11 @@
 import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
+import { registerRoutes } from "./routes.js";
+import { setupVite, serveStatic, log } from "./vite.js";
+import { checkDatabaseConnection } from "./db.js";
+import cors from 'cors';
 
 const app = express();
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
@@ -37,6 +40,13 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Check database connection before starting the server
+  const isConnected = await checkDatabaseConnection();
+  if (!isConnected) {
+    console.error('Failed to connect to the database. Exiting...');
+    process.exit(1);
+  }
+
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
@@ -59,7 +69,7 @@ app.use((req, res, next) => {
   // ALWAYS serve the app on port 5000
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
-  const port = 5001;
+  const port = 5002;
   server.listen({
     port,
     host: "0.0.0.0",

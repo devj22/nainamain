@@ -1,6 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { useAuthStore } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
+import Logo from "@/components/ui/logo";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -28,10 +29,10 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between py-4">
             <Link href="/admin/dashboard">
-              <a className="text-2xl font-bold text-primary flex items-center">
-                <i className="fas fa-landmark mr-2"></i>
-                Nainaland Deals <span className="text-sm font-normal ml-2 text-gray-500">Admin</span>
-              </a>
+              <div className="flex items-center">
+                <Logo />
+                <span className="text-sm font-normal ml-2 text-gray-500">Admin</span>
+              </div>
             </Link>
             
             <div className="flex items-center gap-3">
@@ -62,31 +63,31 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
             <div className="bg-white rounded-lg shadow-sm p-4 sticky top-24">
               <nav className="space-y-1">
                 <Link href="/admin/dashboard">
-                  <a className={`flex items-center px-4 py-3 rounded-md ${isActive("/admin/dashboard") ? "bg-primary text-white" : "text-gray-700 hover:bg-gray-100"}`}>
+                  <div className={`flex items-center px-4 py-3 rounded-md ${isActive("/admin/dashboard") ? "bg-primary text-white" : "text-gray-700 hover:bg-gray-100"}`}>
                     <i className={`fas fa-tachometer-alt mr-3 ${isActive("/admin/dashboard") ? "text-white" : "text-primary"}`}></i>
                     Dashboard
-                  </a>
+                  </div>
                 </Link>
                 
                 <Link href="/admin/properties">
-                  <a className={`flex items-center px-4 py-3 rounded-md ${isActive("/admin/properties") ? "bg-primary text-white" : "text-gray-700 hover:bg-gray-100"}`}>
+                  <div className={`flex items-center px-4 py-3 rounded-md ${isActive("/admin/properties") ? "bg-primary text-white" : "text-gray-700 hover:bg-gray-100"}`}>
                     <i className={`fas fa-home mr-3 ${isActive("/admin/properties") ? "text-white" : "text-primary"}`}></i>
                     Properties
-                  </a>
+                  </div>
                 </Link>
                 
                 <Link href="/admin/blogs">
-                  <a className={`flex items-center px-4 py-3 rounded-md ${isActive("/admin/blogs") ? "bg-primary text-white" : "text-gray-700 hover:bg-gray-100"}`}>
+                  <div className={`flex items-center px-4 py-3 rounded-md ${isActive("/admin/blogs") ? "bg-primary text-white" : "text-gray-700 hover:bg-gray-100"}`}>
                     <i className={`fas fa-newspaper mr-3 ${isActive("/admin/blogs") ? "text-white" : "text-primary"}`}></i>
                     Blog Posts
-                  </a>
+                  </div>
                 </Link>
                 
                 <Link href="/admin/messages">
-                  <a className={`flex items-center px-4 py-3 rounded-md ${isActive("/admin/messages") ? "bg-primary text-white" : "text-gray-700 hover:bg-gray-100"}`}>
+                  <div className={`flex items-center px-4 py-3 rounded-md ${isActive("/admin/messages") ? "bg-primary text-white" : "text-gray-700 hover:bg-gray-100"}`}>
                     <i className={`fas fa-envelope mr-3 ${isActive("/admin/messages") ? "text-white" : "text-primary"}`}></i>
                     Messages
-                  </a>
+                  </div>
                 </Link>
               </nav>
               
@@ -94,17 +95,17 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
                 <h4 className="text-sm font-medium text-gray-600 mb-3">Quick Links</h4>
                 <nav className="space-y-1">
                   <Link href="/admin/properties">
-                    <a className="flex items-center px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded">
+                    <div className="flex items-center px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded">
                       <i className="fas fa-plus-circle mr-3 text-green-500"></i>
                       Add Property
-                    </a>
+                    </div>
                   </Link>
                   
                   <Link href="/admin/blogs">
-                    <a className="flex items-center px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded">
+                    <div className="flex items-center px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded">
                       <i className="fas fa-edit mr-3 text-blue-500"></i>
                       Create Blog Post
-                    </a>
+                    </div>
                   </Link>
                 </nav>
               </div>

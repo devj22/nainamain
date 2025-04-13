@@ -12,10 +12,10 @@ const HeroSection = () => {
       <div className="container mx-auto px-4 z-10">
         <div className="max-w-2xl">
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight mb-6">
-            Find Your Perfect Land Investment
+            Premium Land Investment Opportunities in Panvel, Khalapur & Karjat
           </h1>
           <p className="text-white text-xl mb-8">
-            Discover premium land properties for your dream home or investment with Nainaland Deals.
+            Discover high-potential land properties in Mumbai's fastest-growing regions with Nainaland Deals.
           </p>
           <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
             <Link href="/properties">

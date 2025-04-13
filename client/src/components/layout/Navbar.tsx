@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/lib/auth";
+import Logo from "@/components/ui/logo";
 
 const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -25,9 +26,8 @@ const Navbar = () => {
       <div className="container mx-auto px-4 py-3">
         <div className="flex justify-between items-center">
           <div className="flex items-center">
-            <Link href="/" className="text-xl font-bold text-primary flex items-center">
-              <i className="fas fa-landmark mr-2"></i>
-              Nainaland Deals
+            <Link href="/" className="flex items-center">
+              <Logo />
             </Link>
           </div>
           
@@ -48,6 +48,9 @@ const Navbar = () => {
             </Link>
             <Link href="/blog" className={`font-medium ${isActive('/blog') ? 'text-primary border-b-2 border-primary' : 'hover:text-primary transition'}`}>
               Blog
+            </Link>
+            <Link href="/faq" className={`font-medium ${isActive('/faq') ? 'text-primary border-b-2 border-primary' : 'hover:text-primary transition'}`}>
+              FAQ
             </Link>
             <a href="/#about" className="font-medium hover:text-primary transition">About Us</a>
             <a href="/#contact" className="font-medium hover:text-primary transition">Contact Us</a>
@@ -85,6 +88,9 @@ const Navbar = () => {
           </Link>
           <Link href="/blog" onClick={closeMobileMenu} className={`block py-2 font-medium ${isActive('/blog') ? 'text-primary' : 'hover:text-primary transition'}`}>
             Blog
+          </Link>
+          <Link href="/faq" onClick={closeMobileMenu} className={`block py-2 font-medium ${isActive('/faq') ? 'text-primary' : 'hover:text-primary transition'}`}>
+            FAQ
           </Link>
           <a href="/#about" onClick={closeMobileMenu} className="block py-2 font-medium hover:text-primary transition">About Us</a>
           <a href="/#contact" onClick={closeMobileMenu} className="block py-2 font-medium hover:text-primary transition">Contact Us</a>

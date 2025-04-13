@@ -1,24 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState, useCallback } from "react";
-import { Link } from "wouter";
+import { useCallback } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PropertyCard from "@/components/ui/property-card";
 import { Property } from "@shared/schema";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import useEmblaCarousel from 'embla-carousel-react';
 
 const PropertySection = () => {
-  const [activeTab, setActiveTab] = useState("all");
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false, align: 'start', containScroll: 'trimSnaps' });
   
   const { data: properties, isLoading, error } = useQuery<Property[]>({
     queryKey: ['/api/properties'],
-  });
-  
-  const filteredProperties = properties?.filter(property => {
-    if (activeTab === "all") return true;
-    return property.propertyType === activeTab;
   });
   
   const scrollPrev = useCallback(() => {
@@ -39,21 +31,6 @@ const PropertySection = () => {
           </p>
         </div>
 
-        {/* Property filter options */}
-        <Tabs defaultValue="all" className="mb-8" onValueChange={setActiveTab}>
-          <TabsList className="flex flex-wrap gap-4 justify-center">
-            <TabsTrigger value="all" className="data-[state=active]:bg-primary data-[state=active]:text-white">
-              All Properties
-            </TabsTrigger>
-            <TabsTrigger value="Agricultural" className="data-[state=active]:bg-primary data-[state=active]:text-white">
-              Agricultural Land
-            </TabsTrigger>
-            <TabsTrigger value="Commercial" className="data-[state=active]:bg-primary data-[state=active]:text-white">
-              Commercial Plots
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-
         {/* Property listings carousel */}
         {isLoading ? (
           <div className="text-center py-10">Loading properties...</div>
@@ -63,21 +40,19 @@ const PropertySection = () => {
           <div className="relative">
             <div className="overflow-hidden" ref={emblaRef}>
               <div className="flex">
-                {filteredProperties && filteredProperties.length > 0 ? (
-                  filteredProperties.map((property) => (
-                    <div key={property.id} className="flex-[0_0_100%] min-w-0 sm:flex-[0_0_50%] lg:flex-[0_0_33.333%] pl-4">
-                      <PropertyCard property={property} />
-                    </div>
-                  ))
-                ) : (
+                {properties?.map((property) => (
+                  <div key={property.id} className="flex-[0_0_100%] min-w-0 sm:flex-[0_0_50%] lg:flex-[0_0_33.333%] pl-4">
+                    <PropertyCard property={property} />
+                  </div>
+                )) || (
                   <div className="flex-full text-center py-10 px-4">
-                    No properties found. Please try another filter.
+                    No properties found.
                   </div>
                 )}
               </div>
             </div>
 
-            {filteredProperties && filteredProperties.length > 1 && (
+            {properties && properties.length > 1 && (
               <div className="flex justify-between mt-6">
                 <Button 
                   variant="outline" 
@@ -99,14 +74,6 @@ const PropertySection = () => {
             )}
           </div>
         )}
-
-        <div className="text-center mt-12">
-          <Link href="/properties">
-            <Button className="inline-block bg-primary text-white py-3 px-8 rounded-md hover:bg-opacity-90 transition">
-              View All Properties
-            </Button>
-          </Link>
-        </div>
       </div>
     </section>
   );

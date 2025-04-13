@@ -8,59 +8,74 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { insertMessageSchema } from "@shared/schema";
-import { apiRequest } from "@/lib/queryClient";
+import { insertMessageSchema, type InsertMessage } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
-const contactFormSchema = insertMessageSchema.extend({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Please enter a valid email address"),
-  phone: z.string().min(10, "Please enter a valid phone number"),
-});
-
-type ContactFormValues = z.infer<typeof contactFormSchema>;
+type ContactFormValues = InsertMessage;
 
 const ContactSection = () => {
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
   
   const form = useForm<ContactFormValues>({
-    resolver: zodResolver(contactFormSchema),
+    resolver: zodResolver(insertMessageSchema),
     defaultValues: {
       name: "",
       email: "",
       phone: "",
-      interest: "Residential Plot",
+      location: "",
       message: "",
+      interest: "other"
     },
   });
 
   const mutation = useMutation({
     mutationFn: async (values: ContactFormValues) => {
-      const response = await apiRequest("POST", "/api/messages", values);
-      return response.json();
+      console.log('Submitting message:', values);
+      try {
+        const response = await apiRequest('POST', '/api/messages', values);
+        console.log('Message submission response:', response);
+        return response;
+      } catch (error) {
+        console.error('Message submission error:', error);
+        throw error;
+      }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Message submitted successfully:', data);
       toast({
         title: "Message sent!",
         description: "We'll get back to you as soon as possible.",
       });
-      form.reset();
+      form.reset({
+        name: "",
+        email: "",
+        phone: "",
+        location: "",
+        message: "",
+        interest: "other"
+      });
       setSubmitting(false);
     },
-    onError: (error) => {
+    onError: (error: any) => {
+      console.error('Mutation error:', error);
       toast({
         title: "Error",
-        description: "Failed to send message. Please try again.",
+        description: error.message || "Failed to send message. Please try again.",
         variant: "destructive",
       });
       setSubmitting(false);
     },
   });
 
-  function onSubmit(values: ContactFormValues) {
-    setSubmitting(true);
-    mutation.mutate(values);
+  async function onSubmit(values: ContactFormValues) {
+    try {
+      setSubmitting(true);
+      await mutation.mutateAsync(values);
+    } catch (error) {
+      console.error('Form submission error:', error);
+    }
   }
 
   return (
@@ -120,31 +135,46 @@ const ContactSection = () => {
                   
                   <FormField
                     control={form.control}
-                    name="interest"
+                    name="location"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Interest</FormLabel>
-                        <Select 
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select your interest" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="Residential Plot">Residential Plot</SelectItem>
-                            <SelectItem value="Agricultural Land">Agricultural Land</SelectItem>
-                            <SelectItem value="Commercial Plot">Commercial Plot</SelectItem>
-                            <SelectItem value="Investment Advice">Investment Advice</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <FormLabel>Location</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter your location" {...field} />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
                 </div>
+
+                <FormField
+                  control={form.control}
+                  name="interest"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Interest</FormLabel>
+                      <Select 
+                        value={field.value} 
+                        onValueChange={field.onChange}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select your interest" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="bangalore">Bangalore</SelectItem>
+                          <SelectItem value="mysore">Mysore</SelectItem>
+                          <SelectItem value="hassan">Hassan</SelectItem>
+                          <SelectItem value="chikmagalur">Chikmagalur</SelectItem>
+                          <SelectItem value="other">Other Location</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 
                 <FormField
                   control={form.control}

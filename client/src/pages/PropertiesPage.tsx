@@ -14,46 +14,27 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
 
 const PropertiesPage = () => {
   const [location] = useLocation();
   const params = new URLSearchParams(location.split('?')[1]);
-  const defaultType = params.get('type') || "all";
   
   const [filters, setFilters] = useState({
-    type: defaultType,
     location: "Any Location",
-    priceRange: [0, 50000000], // 0 to 5 Cr
-    sizeRange: [0, 20], // 0 to 20 (Guntha/Acres)
-    sizeUnit: "Guntha",
     searchTerm: ""
   });
   
   const { data: properties, isLoading, error } = useQuery<Property[]>({
     queryKey: ['/api/properties'],
+    initialData: [], // Initialize with empty array
   });
   
   // Filter properties based on selected filters
   const filteredProperties = properties?.filter(property => {
-    // Filter by type
-    if (filters.type !== "all" && property.propertyType !== filters.type) {
-      return false;
-    }
+    if (!property) return false; // Skip if property is undefined
     
     // Filter by location (if not "Any Location")
     if (filters.location !== "Any Location" && !property.location.includes(filters.location)) {
-      return false;
-    }
-    
-    // Filter by price range
-    if (property.price < filters.priceRange[0] || property.price > filters.priceRange[1]) {
-      return false;
-    }
-    
-    // Filter by size (only if size unit matches)
-    if (property.sizeUnit === filters.sizeUnit && 
-       (property.size < filters.sizeRange[0] || property.size > filters.sizeRange[1])) {
       return false;
     }
     
@@ -64,38 +45,31 @@ const PropertiesPage = () => {
     }
     
     return true;
-  });
+  }) || []; // Provide empty array as fallback
   
-  // Format price for display
-  const formatPrice = (price: number) => {
-    if (price >= 10000000) {
-      return `₹${(price / 10000000).toFixed(1)} Cr`;
-    } else if (price >= 100000) {
-      return `₹${(price / 100000).toFixed(1)} Lac`;
-    } else {
-      return `₹${price.toLocaleString('en-IN')}`;
+  // Format price for display with text-based values
+  const formatPrice = (price: number | string) => {
+    if (typeof price === 'string') {
+      return price; // Return text-based price as is
     }
-  };
-  
-  // Update filters
-  const handleTypeChange = (value: string) => {
-    setFilters({...filters, type: value});
+    
+    if (typeof price === 'number') {
+      if (price >= 10000000) {
+        return `${(price / 10000000).toFixed(1)} Cr`;
+      } else if (price >= 100000) {
+        return `${(price / 100000).toFixed(1)} Lac`;
+      } else if (price === 0) {
+        return "Call for Price";
+      } else {
+        return `₹${price.toLocaleString('en-IN')}`;
+      }
+    }
+    
+    return "Call for Price";
   };
   
   const handleLocationChange = (value: string) => {
     setFilters({...filters, location: value});
-  };
-  
-  const handlePriceChange = (value: number[]) => {
-    setFilters({...filters, priceRange: value});
-  };
-  
-  const handleSizeChange = (value: number[]) => {
-    setFilters({...filters, sizeRange: value});
-  };
-  
-  const handleSizeUnitChange = (value: string) => {
-    setFilters({...filters, sizeUnit: value});
   };
   
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -104,21 +78,10 @@ const PropertiesPage = () => {
   
   const resetFilters = () => {
     setFilters({
-      type: "all",
       location: "Any Location",
-      priceRange: [0, 50000000],
-      sizeRange: [0, 20],
-      sizeUnit: "Guntha",
       searchTerm: ""
     });
   };
-  
-  useEffect(() => {
-    // Set filter from URL parameter when component mounts
-    if (defaultType !== "all" && defaultType !== filters.type) {
-      setFilters(prev => ({...prev, type: defaultType}));
-    }
-  }, [defaultType]);
 
   return (
     <>
@@ -135,7 +98,7 @@ const PropertiesPage = () => {
           
           {/* Search and Filter Section */}
           <div className="bg-white p-6 rounded-lg shadow-md mb-10">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium mb-2">Search</label>
                 <Input 
@@ -144,25 +107,6 @@ const PropertiesPage = () => {
                   value={filters.searchTerm}
                   onChange={handleSearchChange}
                 />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-2">Property Type</label>
-                <Select 
-                  value={filters.type} 
-                  onValueChange={handleTypeChange}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Properties</SelectItem>
-                    <SelectItem value="Residential">Residential Plots</SelectItem>
-                    <SelectItem value="Agricultural">Agricultural Land</SelectItem>
-                    <SelectItem value="Commercial">Commercial Plots</SelectItem>
-                    <SelectItem value="FarmHouse">Farm Houses</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
               
               <div>
@@ -183,59 +127,10 @@ const PropertiesPage = () => {
                   </SelectContent>
                 </Select>
               </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-2">Size Unit</label>
-                <Select 
-                  value={filters.sizeUnit} 
-                  onValueChange={handleSizeUnitChange}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select unit" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Guntha">Guntha</SelectItem>
-                    <SelectItem value="Acres">Acres</SelectItem>
-                    <SelectItem value="Sq.ft">Sq.ft</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  Price Range: {formatPrice(filters.priceRange[0])} - {formatPrice(filters.priceRange[1])}
-                </label>
-                <Slider
-                  defaultValue={[0, 50000000]}
-                  min={0}
-                  max={50000000}
-                  step={500000}
-                  value={filters.priceRange}
-                  onValueChange={handlePriceChange}
-                  className="mt-4"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  Size ({filters.sizeUnit}): {filters.sizeRange[0]} - {filters.sizeRange[1]}
-                </label>
-                <Slider
-                  defaultValue={[0, 20]}
-                  min={0}
-                  max={filters.sizeUnit === "Acres" ? 10 : 40}
-                  step={filters.sizeUnit === "Acres" ? 0.5 : 1}
-                  value={filters.sizeRange}
-                  onValueChange={handleSizeChange}
-                  className="mt-4"
-                />
-              </div>
-            </div>
-            
-            <div className="flex justify-end">
-              <Button variant="outline" onClick={resetFilters} className="mr-2">
+            <div className="flex justify-end mt-6">
+              <Button variant="outline" onClick={resetFilters}>
                 Reset Filters
               </Button>
             </div>
@@ -263,7 +158,15 @@ const PropertiesPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {filteredProperties && filteredProperties.length > 0 ? (
                 filteredProperties.map((property) => (
-                  <PropertyCard key={property.id} property={property} />
+                  <PropertyCard 
+                    key={property.id} 
+                    property={{
+                      ...property,
+                      price: property.price === 0 ? "Call for Price" : 
+                             typeof property.price === 'string' ? property.price :
+                             formatPrice(property.price)
+                    }} 
+                  />
                 ))
               ) : (
                 <div className="col-span-3 text-center py-16 bg-white rounded-lg shadow-sm">

@@ -38,20 +38,24 @@ const AdminBlogs = () => {
   const [selectedBlogPost, setSelectedBlogPost] = useState<BlogPost | null>(null);
   
   const { data: blogPosts, isLoading, error } = useQuery<BlogPost[]>({
-    queryKey: ['/api/blogs'],
+    queryKey: ['blogs'],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "blogs");
+      return response;
+    },
   });
   
   const deleteBlogPostMutation = useMutation({
     mutationFn: async (id: number) => {
-      const response = await apiRequest("DELETE", `/api/blogs/${id}`, undefined, getAuthHeader());
-      return response.json();
+      const response = await apiRequest("DELETE", `blogs/${id}`, undefined, getAuthHeader());
+      return response;
     },
     onSuccess: () => {
       toast({
         title: "Success",
         description: "Blog post deleted successfully",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/blogs'] });
+      queryClient.invalidateQueries({ queryKey: ['blogs'] });
     },
     onError: () => {
       toast({
@@ -87,7 +91,8 @@ const AdminBlogs = () => {
   };
   
   // Format date to readable string
-  const formatDate = (dateString: string | Date) => {
+  const formatDate = (dateString: string | Date | null) => {
+    if (!dateString) return 'Not published';
     return format(new Date(dateString), 'MMM d, yyyy');
   };
 

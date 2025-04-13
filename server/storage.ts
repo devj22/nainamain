@@ -5,8 +5,10 @@ import {
   type BlogPost, type InsertBlogPost,
   type Message, type InsertMessage,
   type Testimonial, type InsertTestimonial
-} from "@shared/schema";
+} from "../shared/schema.js";
 import bcrypt from 'bcrypt';
+import { db, safeParseBoolean, safeParseDate } from './db.js';
+import { eq } from 'drizzle-orm';
 
 export interface IStorage {
   // User methods
@@ -45,332 +47,455 @@ export interface IStorage {
   deleteTestimonial(id: number): Promise<boolean>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private properties: Map<number, Property>;
-  private blogPosts: Map<number, BlogPost>;
-  private messages: Map<number, Message>;
-  private testimonials: Map<number, Testimonial>;
-  
-  private userCurrentId: number;
-  private propertyCurrentId: number;
-  private blogPostCurrentId: number;
-  private messageCurrentId: number;
-  private testimonialCurrentId: number;
-
-  constructor() {
-    this.users = new Map();
-    this.properties = new Map();
-    this.blogPosts = new Map();
-    this.messages = new Map();
-    this.testimonials = new Map();
-    
-    this.userCurrentId = 1;
-    this.propertyCurrentId = 1;
-    this.blogPostCurrentId = 1;
-    this.messageCurrentId = 1;
-    this.testimonialCurrentId = 1;
-    
-    // Initialize with admin user
-    this.createUser({
-      username: "admin",
-      password: "Naina@32145" // Will be hashed in the createUser method
-    });
-    
-    // Add sample data
-    this.initializeSampleData();
-  }
-
+export class PostgresStorage implements IStorage {
   // User methods
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const result = await db.select().from(users).where(eq(users.id, id));
+    return result[0];
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+    const result = await db.select().from(users).where(eq(users.username, username));
+    return result[0];
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.userCurrentId++;
-    // Hash the password using bcrypt with a salt of 10 rounds
     const hashedPassword = await bcrypt.hash(insertUser.password, 10);
-    const user: User = { ...insertUser, password: hashedPassword, id };
-    this.users.set(id, user);
-    return user;
+    const result = await db.insert(users).values({
+      ...insertUser,
+      password: hashedPassword,
+    }).returning();
+    return result[0];
   }
 
   // Property methods
   async getAllProperties(): Promise<Property[]> {
-    return Array.from(this.properties.values());
+    const result = await db.select().from(properties);
+    return result.map(prop => ({
+      ...prop,
+      features: prop.features || [],
+      images: prop.images || [],
+      videoUrl: prop.videoUrl || null,
+      isFeatured: prop.isFeatured || false,
+      createdAt: prop.createdAt || new Date()
+    }));
   }
 
   async getPropertyById(id: number): Promise<Property | undefined> {
-    return this.properties.get(id);
+    const result = await db.select().from(properties).where(eq(properties.id, id));
+    if (!result[0]) return undefined;
+    
+    const prop = result[0];
+    return {
+      ...prop,
+      features: prop.features || [],
+      images: prop.images || [],
+      videoUrl: prop.videoUrl || null,
+      isFeatured: prop.isFeatured || false,
+      createdAt: prop.createdAt || new Date()
+    };
   }
 
   async getPropertiesByType(type: string): Promise<Property[]> {
-    return Array.from(this.properties.values()).filter(
-      (property) => property.propertyType === type
-    );
+    const result = await db.select().from(properties).where(eq(properties.propertyType, type));
+    return result.map(prop => ({
+      ...prop,
+      features: prop.features || [],
+      images: prop.images || [],
+      videoUrl: prop.videoUrl || null,
+      isFeatured: prop.isFeatured || false,
+      createdAt: prop.createdAt || new Date()
+    }));
   }
 
   async getFeaturedProperties(): Promise<Property[]> {
-    return Array.from(this.properties.values()).filter(
-      (property) => property.isFeatured
-    );
+    const result = await db.select().from(properties).where(eq(properties.isFeatured, true));
+    return result.map(prop => ({
+      ...prop,
+      features: prop.features || [],
+      images: prop.images || [],
+      videoUrl: prop.videoUrl || null,
+      isFeatured: prop.isFeatured || false,
+      createdAt: prop.createdAt || new Date()
+    }));
   }
 
   async createProperty(insertProperty: InsertProperty): Promise<Property> {
-    const id = this.propertyCurrentId++;
-    const timestamp = new Date();
-    const property: Property = { ...insertProperty, id, createdAt: timestamp };
-    this.properties.set(id, property);
-    return property;
+    const propertyData = {
+      ...insertProperty,
+      features: insertProperty.features || [],
+      images: insertProperty.images || [],
+      videoUrl: insertProperty.videoUrl || null,
+      isFeatured: insertProperty.isFeatured || false,
+      sizeUnit: insertProperty.sizeUnit || "Guntha",
+      price: typeof insertProperty.price === 'string' ? 0 : insertProperty.price
+    };
+
+    const result = await db.insert(properties).values(propertyData).returning();
+    
+    const prop = result[0];
+    return {
+      ...prop,
+      features: prop.features || [],
+      images: prop.images || [],
+      videoUrl: prop.videoUrl || null,
+      isFeatured: prop.isFeatured || false,
+      createdAt: prop.createdAt || new Date()
+    };
   }
 
   async updateProperty(id: number, updateData: Partial<InsertProperty>): Promise<Property | undefined> {
-    const property = this.properties.get(id);
-    if (!property) return undefined;
+    const propertyData = {
+      ...updateData,
+      features: updateData.features || undefined,
+      images: updateData.images || undefined,
+      videoUrl: updateData.videoUrl || null,
+      isFeatured: updateData.isFeatured || undefined,
+      sizeUnit: updateData.sizeUnit || undefined,
+      price: typeof updateData.price === 'string' ? 0 : updateData.price
+    };
+
+    const result = await db.update(properties)
+      .set(propertyData)
+      .where(eq(properties.id, id))
+      .returning();
+      
+    if (!result[0]) return undefined;
     
-    const updatedProperty = { ...property, ...updateData };
-    this.properties.set(id, updatedProperty);
-    return updatedProperty;
+    const prop = result[0];
+    return {
+      ...prop,
+      features: prop.features || [],
+      images: prop.images || [],
+      videoUrl: prop.videoUrl || null,
+      isFeatured: prop.isFeatured || false,
+      createdAt: prop.createdAt || new Date()
+    };
   }
 
   async deleteProperty(id: number): Promise<boolean> {
-    return this.properties.delete(id);
+    const result = await db.delete(properties)
+      .where(eq(properties.id, id))
+      .returning();
+    return result.length > 0;
   }
 
   // Blog methods
   async getAllBlogPosts(): Promise<BlogPost[]> {
-    return Array.from(this.blogPosts.values());
+    try {
+      console.log('Storage: Getting all blog posts...');
+      const result = await db.select().from(blogPosts);
+      console.log(`Storage: Found ${result.length} blog posts`);
+      
+      // Transform the result to ensure correct types
+      return result.map(blog => ({
+        id: blog.id,
+        title: blog.title,
+        content: blog.content,
+        excerpt: blog.excerpt,
+        author: blog.author,
+        image: blog.image,
+        createdAt: blog.createdAt || new Date()
+      }));
+    } catch (error) {
+      console.error('Storage: Error getting all blog posts:', {
+        error,
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+      throw new Error('Failed to fetch blog posts');
+    }
   }
 
   async getBlogPostById(id: number): Promise<BlogPost | undefined> {
-    return this.blogPosts.get(id);
+    try {
+      console.log(`Storage: Getting blog post with id ${id}...`);
+      const result = await db.select().from(blogPosts).where(eq(blogPosts.id, id));
+      
+      if (!result[0]) {
+        console.log(`Storage: No blog post found with id ${id}`);
+        return undefined;
+      }
+      
+      const blog = result[0];
+      console.log(`Storage: Found blog post with id ${id}`);
+      
+      return {
+        id: blog.id,
+        title: blog.title,
+        content: blog.content,
+        excerpt: blog.excerpt,
+        author: blog.author,
+        image: blog.image,
+        createdAt: blog.createdAt || new Date()
+      };
+    } catch (error) {
+      console.error(`Storage: Error getting blog post with id ${id}:`, {
+        error,
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+      throw new Error('Failed to fetch blog post');
+    }
   }
 
   async createBlogPost(insertBlogPost: InsertBlogPost): Promise<BlogPost> {
-    const id = this.blogPostCurrentId++;
-    const timestamp = new Date();
-    const blogPost: BlogPost = { ...insertBlogPost, id, createdAt: timestamp };
-    this.blogPosts.set(id, blogPost);
-    return blogPost;
+    try {
+      console.log('Storage: Creating new blog post...');
+      const result = await db.insert(blogPosts).values(insertBlogPost).returning();
+      
+      if (!result[0]) {
+        throw new Error('Failed to create blog post - no result returned');
+      }
+      
+      const blog = result[0];
+      console.log(`Storage: Created blog post with id ${blog.id}`);
+      
+      return {
+        id: blog.id,
+        title: blog.title,
+        content: blog.content,
+        excerpt: blog.excerpt,
+        author: blog.author,
+        image: blog.image,
+        createdAt: blog.createdAt || new Date()
+      };
+    } catch (error) {
+      console.error('Storage: Error creating blog post:', {
+        error,
+        message: error instanceof Error ? error.message : 'Unknown error',
+        insertBlogPost
+      });
+      throw new Error('Failed to create blog post');
+    }
   }
 
   async updateBlogPost(id: number, updateData: Partial<InsertBlogPost>): Promise<BlogPost | undefined> {
-    const blogPost = this.blogPosts.get(id);
-    if (!blogPost) return undefined;
-    
-    const updatedBlogPost = { ...blogPost, ...updateData };
-    this.blogPosts.set(id, updatedBlogPost);
-    return updatedBlogPost;
+    try {
+      console.log(`Storage: Updating blog post with id ${id}...`);
+      const result = await db.update(blogPosts)
+        .set(updateData)
+        .where(eq(blogPosts.id, id))
+        .returning();
+        
+      if (!result[0]) {
+        console.log(`Storage: No blog post found with id ${id}`);
+        return undefined;
+      }
+      
+      const blog = result[0];
+      console.log(`Storage: Updated blog post with id ${id}`);
+      
+      return {
+        id: blog.id,
+        title: blog.title,
+        content: blog.content,
+        excerpt: blog.excerpt,
+        author: blog.author,
+        image: blog.image,
+        createdAt: blog.createdAt || new Date()
+      };
+    } catch (error) {
+      console.error(`Storage: Error updating blog post with id ${id}:`, {
+        error,
+        message: error instanceof Error ? error.message : 'Unknown error',
+        updateData
+      });
+      throw new Error('Failed to update blog post');
+    }
   }
 
   async deleteBlogPost(id: number): Promise<boolean> {
-    return this.blogPosts.delete(id);
+    try {
+      console.log(`Storage: Deleting blog post with id ${id}...`);
+      const result = await db.delete(blogPosts)
+        .where(eq(blogPosts.id, id))
+        .returning();
+      
+      const deleted = result.length > 0;
+      console.log(`Storage: Blog post with id ${id} ${deleted ? 'deleted' : 'not found'}`);
+      
+      return deleted;
+    } catch (error) {
+      console.error(`Storage: Error deleting blog post with id ${id}:`, {
+        error,
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+      throw new Error('Failed to delete blog post');
+    }
   }
 
   // Message methods
   async getAllMessages(): Promise<Message[]> {
-    return Array.from(this.messages.values());
+    try {
+      console.log('Getting all messages...');
+      const result = await db.select().from(messages);
+      console.log(`Found ${result.length} messages`);
+      
+      // Transform the result to ensure correct types
+      return result.map(msg => ({
+        id: msg.id,
+        name: msg.name,
+        email: msg.email,
+        phone: msg.phone,
+        location: msg.location,
+        message: msg.message,
+        interest: msg.interest || 'other',
+        isRead: safeParseBoolean(msg.isRead),
+        createdAt: safeParseDate(msg.createdAt)
+      }));
+    } catch (error) {
+      console.error('Error getting all messages:', {
+        error,
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+      throw new Error('Failed to fetch messages');
+    }
   }
 
   async getMessageById(id: number): Promise<Message | undefined> {
-    return this.messages.get(id);
+    try {
+      const result = await db.select().from(messages).where(eq(messages.id, id));
+      if (!result[0]) return undefined;
+      
+      const msg = result[0];
+      return {
+        ...msg,
+        interest: msg.interest || 'other',
+        isRead: safeParseBoolean(msg.isRead),
+        createdAt: safeParseDate(msg.createdAt)
+      };
+    } catch (error) {
+      console.error('Error getting message by id:', {
+        error,
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+      throw new Error('Failed to fetch message');
+    }
   }
 
   async createMessage(insertMessage: InsertMessage): Promise<Message> {
-    const id = this.messageCurrentId++;
-    const timestamp = new Date();
-    const message: Message = { ...insertMessage, id, isRead: false, createdAt: timestamp };
-    this.messages.set(id, message);
-    return message;
+    try {
+      const result = await db.insert(messages).values({
+        ...insertMessage,
+        interest: insertMessage.interest || 'other',
+        isRead: false
+      }).returning();
+      
+      if (!result[0]) {
+        throw new Error('Failed to create message - no result returned');
+      }
+      
+      const msg = result[0];
+      return {
+        ...msg,
+        interest: msg.interest || 'other',
+        isRead: safeParseBoolean(msg.isRead),
+        createdAt: safeParseDate(msg.createdAt)
+      };
+    } catch (error) {
+      console.error('Error creating message:', {
+        error,
+        message: error instanceof Error ? error.message : 'Unknown error',
+        insertMessage
+      });
+      throw new Error('Failed to create message');
+    }
   }
 
   async updateMessageReadStatus(id: number, isRead: boolean): Promise<Message | undefined> {
-    const message = this.messages.get(id);
-    if (!message) return undefined;
+    try {
+      const result = await db.update(messages)
+        .set({ isRead })
+        .where(eq(messages.id, id))
+        .returning();
+        
+      if (!result[0]) return undefined;
     
-    const updatedMessage = { ...message, isRead };
-    this.messages.set(id, updatedMessage);
-    return updatedMessage;
+      const msg = result[0];
+      return {
+        ...msg,
+        interest: msg.interest || 'other',
+        isRead: safeParseBoolean(msg.isRead),
+        createdAt: safeParseDate(msg.createdAt)
+      };
+    } catch (error) {
+      console.error('Error updating message read status:', {
+        error,
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+      throw new Error('Failed to update message status');
+    }
   }
 
   async deleteMessage(id: number): Promise<boolean> {
-    return this.messages.delete(id);
+    try {
+      const result = await db.delete(messages)
+        .where(eq(messages.id, id))
+        .returning();
+      return result.length > 0;
+    } catch (error) {
+      console.error('Error deleting message:', {
+        error,
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+      throw new Error('Failed to delete message');
+    }
   }
 
   // Testimonial methods
   async getAllTestimonials(): Promise<Testimonial[]> {
-    return Array.from(this.testimonials.values());
+    const result = await db.select().from(testimonials);
+    return result.map(testimonial => ({
+      ...testimonial,
+      image: testimonial.image || '/images/default-avatar.png'
+    }));
   }
 
   async getTestimonialById(id: number): Promise<Testimonial | undefined> {
-    return this.testimonials.get(id);
+    const result = await db.select().from(testimonials).where(eq(testimonials.id, id));
+    if (!result[0]) return undefined;
+    
+    return {
+      ...result[0],
+      image: result[0].image || '/images/default-avatar.png'
+    };
   }
 
   async createTestimonial(insertTestimonial: InsertTestimonial): Promise<Testimonial> {
-    const id = this.testimonialCurrentId++;
-    const testimonial: Testimonial = { ...insertTestimonial, id };
-    this.testimonials.set(id, testimonial);
-    return testimonial;
+    const result = await db.insert(testimonials).values({
+      ...insertTestimonial,
+      image: insertTestimonial.image || '/images/default-avatar.png'
+    }).returning();
+    
+    return {
+      ...result[0],
+      image: result[0].image || '/images/default-avatar.png'
+    };
   }
 
   async updateTestimonial(id: number, updateData: Partial<InsertTestimonial>): Promise<Testimonial | undefined> {
-    const testimonial = this.testimonials.get(id);
-    if (!testimonial) return undefined;
+    const result = await db.update(testimonials)
+      .set({
+        ...updateData,
+        image: updateData.image || undefined
+      })
+      .where(eq(testimonials.id, id))
+      .returning();
     
-    const updatedTestimonial = { ...testimonial, ...updateData };
-    this.testimonials.set(id, updatedTestimonial);
-    return updatedTestimonial;
+    if (!result[0]) return undefined;
+    
+    return {
+      ...result[0],
+      image: result[0].image || '/images/default-avatar.png'
+    };
   }
 
   async deleteTestimonial(id: number): Promise<boolean> {
-    return this.testimonials.delete(id);
-  }
-
-  // Initialize with sample data
-  private initializeSampleData() {
-    // Sample properties
-    const properties: InsertProperty[] = [
-      {
-        title: "Premium Residential Plot",
-        description: "A beautiful residential plot in a prime location with excellent connectivity.",
-        price: 12000000,
-        location: "Electronic City, Bangalore",
-        size: 20,
-        sizeUnit: "Guntha",
-        features: ["60 ft Road", "BMRDA Approved", "Corner Plot"],
-        images: ["https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&h=300&q=80"],
-        videoUrl: "https://www.youtube.com/embed/EngW7tLk6R8",
-        isFeatured: true,
-        propertyType: "Residential"
-      },
-      {
-        title: "Fertile Agricultural Land",
-        description: "Fertile land suitable for various crops with good water source.",
-        price: 9000000,
-        location: "Srirangapatna, Mysore",
-        size: 2,
-        sizeUnit: "Acres",
-        features: ["Borewell", "Fertile Soil", "Road Access"],
-        images: ["https://images.unsplash.com/photo-1628744404730-5e143358539b?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&h=300&q=80"],
-        videoUrl: "https://www.youtube.com/embed/1PBNBnU7b5s",
-        isFeatured: false,
-        propertyType: "Agricultural"
-      },
-      {
-        title: "Commercial Land",
-        description: "Prime commercial land suitable for business development.",
-        price: 35000000,
-        location: "Gachibowli, Hyderabad",
-        size: 40,
-        sizeUnit: "Guntha",
-        features: ["Highway Access", "Commercial Zone", "Prime Location"],
-        images: ["https://images.unsplash.com/photo-1628624747186-a941c476b7ef?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&h=300&q=80"],
-        isFeatured: false,
-        propertyType: "Commercial"
-      },
-      {
-        title: "Prime Corner Plot",
-        description: "East-facing corner plot in a developing residential area.",
-        price: 8500000,
-        location: "Sholinganallur, Chennai",
-        size: 12,
-        sizeUnit: "Guntha",
-        features: ["Corner Plot", "East Facing", "Residential Area"],
-        images: ["https://images.unsplash.com/photo-1531971589569-0d9370cbe1e5?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&h=300&q=80"],
-        isFeatured: false,
-        propertyType: "Residential"
-      },
-      {
-        title: "Gated Community Plot",
-        description: "Premium plot in a gated community with all amenities.",
-        price: 15000000,
-        location: "Whitefield, Bangalore",
-        size: 15,
-        sizeUnit: "Guntha",
-        features: ["Gated", "Park View", "24/7 Security"],
-        images: ["https://images.unsplash.com/photo-1602941525421-8f8b81d3edbb?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&h=300&q=80"],
-        isFeatured: true,
-        propertyType: "Residential"
-      },
-      {
-        title: "Premium Farmland",
-        description: "Beautiful farmland with hill view and natural water source.",
-        price: 7500000,
-        location: "Devanahalli, Bangalore",
-        size: 1,
-        sizeUnit: "Acres",
-        features: ["Water Source", "Hill View", "Farmhouse Permitted"],
-        images: ["https://images.unsplash.com/photo-1543746379-c5d6bc868f57?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&h=300&q=80"],
-        isFeatured: false,
-        propertyType: "Agricultural"
-      }
-    ];
-
-    // Sample blog posts
-    const blogPosts: InsertBlogPost[] = [
-      {
-        title: "5 Things to Consider Before Investing in Land",
-        content: "Detailed article about land investment considerations including location, legal verification, future development plans, return on investment analysis, and infrastructure development.",
-        excerpt: "Learn the essential factors you should evaluate before making a land investment to ensure maximum returns.",
-        author: "Ananya Sharma",
-        image: "https://images.unsplash.com/photo-1542879379-a2761ec6d9b5?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&h=300&q=80"
-      },
-      {
-        title: "Legal Checklist for Land Purchase in India",
-        content: "Comprehensive guide covering all legal documents required for land purchase in India, including title deed verification, encumbrance certificate, land use conversion, and tax compliance.",
-        excerpt: "Understand the essential legal documents and verifications required when purchasing land property in India.",
-        author: "Raj Malhotra",
-        image: "https://images.unsplash.com/photo-1526948531399-320e7e40f0ca?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&h=300&q=80"
-      },
-      {
-        title: "Land Value Trends to Watch in 2023",
-        content: "Analysis of current land value trends across major Indian cities, future growth prospects, and recommendations for potential investors.",
-        excerpt: "Explore the emerging trends in land values and discover which regions are experiencing the highest growth rates.",
-        author: "Vikram Singh",
-        image: "https://images.unsplash.com/photo-1594608661623-aa0bd3a69799?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&h=300&q=80"
-      }
-    ];
-
-    // Sample testimonials
-    const testimonials: InsertTestimonial[] = [
-      {
-        name: "Priya Desai",
-        location: "Bangalore",
-        message: "I was looking for a residential plot in Bangalore for over 6 months. Nainaland Deals helped me find the perfect plot in just 2 weeks. Their team's knowledge and support throughout the process was exceptional.",
-        rating: 5,
-        image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&h=100&q=80"
-      },
-      {
-        name: "Arun Kumar",
-        location: "Chennai",
-        message: "The team at Nainaland Deals provided excellent guidance for my agricultural land investment. Their expertise in legal documentation saved me from potential complications. Highly recommend their services!",
-        rating: 5,
-        image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&h=100&q=80"
-      },
-      {
-        name: "Meera Reddy",
-        location: "Hyderabad",
-        message: "As a first-time land investor, I appreciated the transparent approach of Nainaland Deals. They helped me understand the market and found a property that has already appreciated by 15% in just a year!",
-        rating: 4.5,
-        image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&h=100&q=80"
-      }
-    ];
-
-    // Add properties
-    properties.forEach(property => this.createProperty(property));
-    
-    // Add blog posts
-    blogPosts.forEach(post => this.createBlogPost(post));
-    
-    // Add testimonials
-    testimonials.forEach(testimonial => this.createTestimonial(testimonial));
+    const result = await db.delete(testimonials)
+      .where(eq(testimonials.id, id))
+      .returning();
+    return result.length > 0;
   }
 }
 
-export const storage = new MemStorage();
+// Export a singleton instance
+export const storage = new PostgresStorage();

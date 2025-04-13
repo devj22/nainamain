@@ -4,98 +4,82 @@ const Footer = () => {
   return (
     <footer className="bg-[#50312F] text-white pt-16 pb-8">
       <div className="container mx-auto px-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
           <div>
-            <h3 className="text-xl font-semibold mb-6">Nainaland Deals</h3>
+            <h3 className="text-xl font-semibold mb-6">Contact Us</h3>
+            <ul className="space-y-4">
+              <li className="flex items-center space-x-3">
+                <i className="fas fa-phone text-[#FF6B35]"></i>
+                <div>
+                  <p className="text-gray-300">Phone</p>
+                  <a href="tel:+919876543210" className="text-white hover:text-[#FF6B35] transition">
+                    +91 98765 43210
+                  </a>
+                </div>
+              </li>
+              <li className="flex items-center space-x-3">
+                <i className="fas fa-envelope text-[#FF6B35]"></i>
+                <div>
+                  <p className="text-gray-300">Email</p>
+                  <a href="mailto:info@nainaland.com" className="text-white hover:text-[#FF6B35] transition">
+                    info@nainaland.com
+                  </a>
+                </div>
+              </li>
+              <li className="flex items-start space-x-3">
+                <i className="fas fa-map-marker-alt text-[#FF6B35] mt-1"></i>
+                <div>
+                  <p className="text-gray-300">Address</p>
+                  <p className="text-white">
+                    123 Real Estate Avenue<br />
+                    Bangalore, Karnataka 560001<br />
+                    India
+                  </p>
+                </div>
+              </li>
+              <li className="flex items-center space-x-3">
+                <i className="fas fa-clock text-[#FF6B35]"></i>
+                <div>
+                  <p className="text-gray-300">Business Hours</p>
+                  <p className="text-white">
+                    Monday - Saturday: 9:00 AM - 6:00 PM<br />
+                    Sunday: Closed
+                  </p>
+                </div>
+              </li>
+            </ul>
+          </div>
+          
+          <div>
+            <h3 className="text-xl font-semibold mb-6">Connect With Us</h3>
             <p className="text-gray-300 mb-6">
-              Your trusted partner in land property investments. Offering premium land properties across South India since 2010.
+              Follow us on social media for the latest updates on new properties and real estate insights.
             </p>
-            <div className="flex space-x-4">
-              <a href="#" className="text-gray-300 hover:text-white transition">
+            <div className="flex space-x-4 mb-8">
+              <a href="#" className="w-10 h-10 rounded-full bg-[#3C2523] flex items-center justify-center text-white hover:bg-[#FF6B35] transition">
                 <i className="fab fa-facebook-f"></i>
               </a>
-              <a href="#" className="text-gray-300 hover:text-white transition">
+              <a href="#" className="w-10 h-10 rounded-full bg-[#3C2523] flex items-center justify-center text-white hover:bg-[#FF6B35] transition">
                 <i className="fab fa-twitter"></i>
               </a>
-              <a href="#" className="text-gray-300 hover:text-white transition">
+              <a href="#" className="w-10 h-10 rounded-full bg-[#3C2523] flex items-center justify-center text-white hover:bg-[#FF6B35] transition">
                 <i className="fab fa-instagram"></i>
               </a>
-              <a href="#" className="text-gray-300 hover:text-white transition">
+              <a href="#" className="w-10 h-10 rounded-full bg-[#3C2523] flex items-center justify-center text-white hover:bg-[#FF6B35] transition">
                 <i className="fab fa-linkedin-in"></i>
               </a>
             </div>
-          </div>
-          
-          <div>
-            <h3 className="text-xl font-semibold mb-6">Quick Links</h3>
-            <ul className="space-y-3">
-              <li>
-                <Link href="/" className="text-gray-300 hover:text-white transition">Home</Link>
-              </li>
-              <li>
-                <Link href="/properties" className="text-gray-300 hover:text-white transition">Properties</Link>
-              </li>
-              <li>
-                <Link href="/blog" className="text-gray-300 hover:text-white transition">Blog</Link>
-              </li>
-              <li>
-                <a href="/#about" className="text-gray-300 hover:text-white transition">About Us</a>
-              </li>
-              <li>
-                <a href="/#contact" className="text-gray-300 hover:text-white transition">Contact Us</a>
-              </li>
-            </ul>
-          </div>
-          
-          <div>
-            <h3 className="text-xl font-semibold mb-6">Properties</h3>
-            <ul className="space-y-3">
-              <li>
-                <Link href="/properties?type=Residential" className="text-gray-300 hover:text-white transition">
-                  Residential Plots
-                </Link>
-              </li>
-              <li>
-                <Link href="/properties?type=Agricultural" className="text-gray-300 hover:text-white transition">
-                  Agricultural Land
-                </Link>
-              </li>
-              <li>
-                <Link href="/properties?type=Commercial" className="text-gray-300 hover:text-white transition">
-                  Commercial Plots
-                </Link>
-              </li>
-              <li>
-                <Link href="/properties?type=FarmHouse" className="text-gray-300 hover:text-white transition">
-                  Farm Houses
-                </Link>
-              </li>
-              <li>
-                <Link href="/properties?featured=true" className="text-gray-300 hover:text-white transition">
-                  Premium Plots
-                </Link>
-              </li>
-            </ul>
-          </div>
-          
-          <div>
-            <h3 className="text-xl font-semibold mb-6">Subscribe</h3>
-            <p className="text-gray-300 mb-4">
-              Subscribe to our newsletter to receive updates on new properties and investment opportunities.
-            </p>
-            <form className="flex">
-              <input 
-                type="email" 
-                placeholder="Your email" 
-                className="p-3 bg-[#3C2523] text-white rounded-l-md focus:outline-none w-full"
-              />
-              <button 
-                type="button" 
-                className="bg-[#FF6B35] px-4 rounded-r-md hover:bg-opacity-90 transition"
-              >
-                <i className="fas fa-paper-plane"></i>
-              </button>
-            </form>
+            <div className="space-y-2">
+              <p className="text-gray-300">Download Our App</p>
+              <div className="flex space-x-4">
+                <a href="#" className="hover:opacity-80 transition">
+                  <img src="/app-store.png" alt="Download on App Store" className="h-10" />
+                </a>
+                <a href="#" className="hover:opacity-80 transition">
+                  <img src="/play-store.png" alt="Get it on Google Play" className="h-10" />
+                </a>
+              </div>
+            </div>
           </div>
         </div>
         

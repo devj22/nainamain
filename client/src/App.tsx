@@ -8,6 +8,7 @@ import PropertiesPage from "@/pages/PropertiesPage";
 import PropertyDetailPage from "@/pages/PropertyDetailPage";
 import BlogPage from "@/pages/BlogPage";
 import BlogDetailPage from "@/pages/BlogDetailPage";
+import FAQPage from "@/pages/FAQPage";
 import AdminLoginPage from "@/pages/AdminLoginPage";
 import AdminDashboard from "@/pages/AdminDashboard";
 import AdminProperties from "@/pages/AdminProperties";
@@ -34,6 +35,7 @@ function Router() {
       <Route path="/properties/:id" component={PropertyDetailPage} />
       <Route path="/blog" component={BlogPage} />
       <Route path="/blog/:id" component={BlogDetailPage} />
+      <Route path="/faq" component={FAQPage} />
       <Route path="/admin/login" component={AdminLoginPage} />
       <Route path="/admin/dashboard" component={() => <ProtectedRoute component={AdminDashboard} />} />
       <Route path="/admin/properties" component={() => <ProtectedRoute component={AdminProperties} />} />

@@ -29,26 +29,77 @@ import { useState } from "react";
 import { format } from "date-fns";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { getAuthHeader } from "@/lib/auth";
+import { getAuthHeader, useAuthStore } from "@/lib/auth";
+import { getQueryFn } from "@/lib/queryClient";
+import React from "react";
 
 const MessageList = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const isHydrated = useAuthStore((state) => state.isHydrated);
+  
+  // Debug log for auth state
+  console.log('Auth state:', { isAuthenticated, isHydrated });
   
   const { data: messages, isLoading, error } = useQuery<Message[]>({
     queryKey: ['/api/messages'],
+    queryFn: async () => {
+      try {
+        console.log('MessageList - Starting to fetch messages');
+        if (!isAuthenticated) {
+          console.error('MessageList - Not authenticated');
+          throw new Error('Not authenticated. Please log in.');
+        }
+        
+        const headers = getAuthHeader();
+        if (!headers.Authorization) {
+          console.error('MessageList - No auth header available');
+          throw new Error('Authentication token not available');
+        }
+        
+        console.log('MessageList - Making API request');
+        const response = await apiRequest("GET", "/api/messages", undefined, headers);
+        
+        if (!Array.isArray(response)) {
+          console.error('MessageList - Invalid response format:', response);
+          throw new Error('Invalid response format: expected an array of messages');
+        }
+        
+        return response;
+      } catch (error) {
+        console.error('MessageList - Failed to fetch messages:', {
+          error,
+          message: error instanceof Error ? error.message : 'Unknown error'
+        });
+        throw error;
+      }
+    },
+    enabled: isHydrated && isAuthenticated,
+    retry: 1,
+    retryDelay: 1000
   });
+
+  // Add error toast notification
+  React.useEffect(() => {
+    if (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to fetch messages",
+        variant: "destructive",
+      });
+    }
+  }, [error, toast]);
 
   const markAsReadMutation = useMutation({
     mutationFn: async ({ id, isRead }: { id: number; isRead: boolean }) => {
-      const response = await apiRequest(
+      return await apiRequest(
         "PUT", 
         `/api/messages/${id}/read`, 
         { isRead }, 
         getAuthHeader()
       );
-      return response.json();
     },
     onSuccess: () => {
       toast({
@@ -57,10 +108,10 @@ const MessageList = () => {
       });
       queryClient.invalidateQueries({ queryKey: ['/api/messages'] });
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: "Error",
-        description: "Failed to update message status",
+        description: error.message || "Failed to update message status",
         variant: "destructive",
       });
     },
@@ -68,13 +119,12 @@ const MessageList = () => {
 
   const deleteMessageMutation = useMutation({
     mutationFn: async (id: number) => {
-      const response = await apiRequest(
+      return await apiRequest(
         "DELETE", 
         `/api/messages/${id}`, 
         undefined, 
         getAuthHeader()
       );
-      return response.json();
     },
     onSuccess: () => {
       toast({
@@ -84,10 +134,10 @@ const MessageList = () => {
       queryClient.invalidateQueries({ queryKey: ['/api/messages'] });
       setSelectedMessage(null);
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: "Error",
-        description: "Failed to delete message",
+        description: error.message || "Failed to delete message",
         variant: "destructive",
       });
     },
@@ -120,9 +170,45 @@ const MessageList = () => {
   };
 
   // Format date to readable string
-  const formatDate = (dateString: string | Date) => {
+  const formatDate = (dateString: string | Date | null) => {
+    if (!dateString) return 'N/A';
     return format(new Date(dateString), 'MMM d, yyyy h:mm a');
   };
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Customer Messages</CardTitle>
+          <CardDescription>Loading messages...</CardDescription>
+        </CardHeader>
+      </Card>
+    );
+  }
+
+  // Show authentication error
+  if (!isHydrated || !isAuthenticated) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Customer Messages</CardTitle>
+          <CardDescription>Please log in to view messages.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-10">
+            <p className="text-red-500 mb-4">Authentication required</p>
+            <Button 
+              variant="default" 
+              onClick={() => window.location.href = '/admin/login'}
+            >
+              Go to Login
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -131,17 +217,13 @@ const MessageList = () => {
         <CardDescription>View and manage inquiries from potential customers.</CardDescription>
       </CardHeader>
       <CardContent>
-        {isLoading ? (
-          <div className="text-center py-10">Loading messages...</div>
-        ) : error ? (
-          <div className="text-center py-10 text-red-500">Error loading messages</div>
-        ) : messages && messages.length > 0 ? (
+        {messages && messages.length > 0 ? (
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
-                <TableHead>Interest</TableHead>
+                <TableHead>Location</TableHead>
                 <TableHead>Date</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -152,7 +234,7 @@ const MessageList = () => {
                 <TableRow key={message.id} className={!message.isRead ? "bg-muted/50" : ""}>
                   <TableCell className="font-medium">{message.name}</TableCell>
                   <TableCell>{message.email}</TableCell>
-                  <TableCell>{message.interest}</TableCell>
+                  <TableCell>{message.location}</TableCell>
                   <TableCell>{formatDate(message.createdAt)}</TableCell>
                   <TableCell>
                     <Badge variant={message.isRead ? "secondary" : "default"}>
@@ -207,7 +289,7 @@ const MessageList = () => {
                     <h4 className="text-sm font-medium">Contact Information</h4>
                     <p className="text-sm">Email: {selectedMessage.email}</p>
                     <p className="text-sm">Phone: {selectedMessage.phone}</p>
-                    <p className="text-sm">Interest: {selectedMessage.interest}</p>
+                    <p className="text-sm">Location: {selectedMessage.location}</p>
                   </div>
                   
                   <div>

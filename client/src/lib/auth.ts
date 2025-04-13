@@ -1,13 +1,15 @@
 import { apiRequest } from "@/lib/queryClient";
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { persist, createJSONStorage } from "zustand/middleware";
 
 interface AuthState {
   token: string | null;
   user: { id: number; username: string } | null;
   isAuthenticated: boolean;
+  isHydrated: boolean;
   login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
+  setHydrated: () => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -16,11 +18,15 @@ export const useAuthStore = create<AuthState>()(
       token: null,
       user: null,
       isAuthenticated: false,
+      isHydrated: false,
       
       login: async (username: string, password: string) => {
         try {
-          const response = await apiRequest("POST", "/api/auth/login", { username, password });
-          const data = await response.json();
+          const data = await apiRequest("POST", "/api/auth/login", { username, password });
+          
+          if (!data.token || !data.user) {
+            throw new Error('Invalid response from server');
+          }
           
           set({
             token: data.token,
@@ -31,6 +37,11 @@ export const useAuthStore = create<AuthState>()(
           return true;
         } catch (error) {
           console.error("Login failed:", error);
+          set({
+            token: null,
+            user: null,
+            isAuthenticated: false,
+          });
           return false;
         }
       },
@@ -42,14 +53,30 @@ export const useAuthStore = create<AuthState>()(
           isAuthenticated: false,
         });
       },
+      
+      setHydrated: () => set({ isHydrated: true }),
     }),
     {
       name: "auth-storage",
+      storage: createJSONStorage(() => localStorage),
+      onRehydrateStorage: () => (state) => {
+        state?.setHydrated();
+      },
     }
   )
 );
 
-export const getAuthHeader = () => {
-  const { token } = useAuthStore.getState();
-  return token ? { Authorization: `Bearer ${token}` } : {};
+export const getAuthHeader = (): Record<string, string> => {
+  const state = useAuthStore.getState();
+  if (!state.isHydrated) {
+    console.warn('Auth store not yet hydrated');
+    return {};
+  }
+  return state.token ? { Authorization: `Bearer ${state.token}` } : {};
+};
+
+// Helper to check if user is authenticated
+export const checkAuth = (): boolean => {
+  const state = useAuthStore.getState();
+  return state.isHydrated && state.isAuthenticated && !!state.token;
 };

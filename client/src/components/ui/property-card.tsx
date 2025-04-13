@@ -1,6 +1,6 @@
 import { Link } from "wouter";
-import { Card, CardContent } from "@/components/ui/card";
-import { MapPin, Ruler, LayoutGrid, Trees, Video } from "lucide-react";
+import { MapPin, Ruler, LayoutGrid, Trees } from "lucide-react";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Property } from "@shared/schema";
 
 interface PropertyCardProps {
@@ -19,11 +19,20 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
     images, 
     videoUrl,
     isFeatured,
-    propertyType 
+    propertyType,
+    priceUnit 
   } = property;
 
-  // Format price in Indian currency format (e.g., ₹1.2 Cr for 12000000)
-  const formatPrice = (price: number) => {
+  // Format price in Indian currency format or display text-based price
+  const formatPrice = (price: string | number) => {
+    if (typeof price === 'string') {
+      return price;
+    }
+
+    if (price === 0) {
+      return "Call for Price";
+    }
+
     if (price >= 10000000) {
       return `₹${(price / 10000000).toFixed(1)} Cr`;
     } else if (price >= 100000) {
@@ -39,39 +48,33 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
     : "https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&h=300&q=80";
 
   return (
-    <Card className="property-card bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-transform hover:-translate-y-1">
-      <div className="relative">
-        <img 
-          src={imageUrl} 
-          alt={title} 
-          className="w-full h-56 object-cover"
-        />
-        {isFeatured && (
-          <span className="absolute top-4 left-4 bg-[#FF6B35] text-white text-sm font-medium px-3 py-1 rounded-md">
-            Featured
-          </span>
-        )}
-        {propertyType === "Agricultural" && (
-          <span className="absolute top-4 left-4 bg-[#A67C52] text-white text-sm font-medium px-3 py-1 rounded-md">
-            Agricultural
-          </span>
-        )}
-        {propertyType === "Commercial" && (
-          <span className="absolute top-4 left-4 bg-[#333333] text-white text-sm font-medium px-3 py-1 rounded-md">
-            Commercial
-          </span>
-        )}
-        {videoUrl && (
-          <span className="absolute top-4 right-4 bg-red-600 text-white text-sm font-medium px-3 py-1 rounded-md flex items-center">
-            <Video className="h-3 w-3 mr-1" /> Video
-          </span>
-        )}
-      </div>
+    <Card className="h-full">
+      <CardHeader className="p-0">
+        <div className="relative aspect-[4/3] overflow-hidden rounded-t-lg">
+          <img 
+            src={imageUrl} 
+            alt={title}
+            className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
+          />
+          {isFeatured && (
+            <span className="absolute top-2 right-2 bg-primary text-white px-3 py-1 rounded-full text-sm">
+              Featured
+            </span>
+          )}
+          {propertyType && (
+            <span className="absolute top-2 left-2 bg-black/50 text-white px-3 py-1 rounded-full text-sm">
+              {propertyType}
+            </span>
+          )}
+        </div>
+      </CardHeader>
 
       <CardContent className="p-6">
         <div className="flex justify-between items-start mb-2">
           <h3 className="text-xl font-semibold">{title}</h3>
-          <span className="text-primary font-bold">{formatPrice(price)}</span>
+          <span className="text-primary font-bold">
+            {formatPrice(price)}{priceUnit ? ` per ${priceUnit}` : ''}
+          </span>
         </div>
         
         <p className="text-gray-500 mb-4 flex items-center">
