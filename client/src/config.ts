@@ -1,6 +1,6 @@
 // API configuration
 export const API_BASE_URL = process.env.NODE_ENV === 'production'
-  ? 'https://nainaland-api.onrender.com'  // Backend URL on Render
+  ? 'https://nainamain.onrender.com'  // Combined frontend and backend URL on Render
   : 'http://localhost:5002';
 
 // Add API URL prefix to a path
