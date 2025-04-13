@@ -2,18 +2,22 @@ services:
   - type: web
     name: nainaland
     env: node
-    buildCommand: npm install --production=false && npm run build
+    plan: free
+    buildCommand: npm ci && npm run build
     startCommand: cd dist && node server/index.js
     envVars:
       - key: NODE_ENV
         value: production
       - key: DATABASE_URL
-        sync: false # This will be set manually in Render dashboard
+        sync: false
+    healthCheckPath: /api/health
     buildFilter:
       paths:
-        - client/**/*
-        - server/**/*
-        - shared/**/*
-        - package.json
-        - tsconfig*.json
-        - vite.config.ts 
+      - client/**/*
+      - server/**/*
+      - shared/**/*
+      - package.json
+      - package-lock.json
+      - tsconfig*.json
+      - vite.config.ts
+    autoDeploy: true 

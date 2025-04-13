@@ -56,6 +56,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // API routes (prefix with /api)
   const apiRouter = express.Router();
 
+  // Health check endpoint
+  apiRouter.get('/health', (req: Request, res: Response) => {
+    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  });
+
   // Auth routes
   apiRouter.post('/auth/login', async (req: Request, res: Response) => {
     try {
