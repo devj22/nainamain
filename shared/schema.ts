@@ -19,7 +19,8 @@ export const properties = pgTable("properties", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
   description: text("description").notNull(),
-  price: integer("price").notNull(),
+  price: text("price").notNull(),
+  priceUnit: text("price_unit"),
   location: text("location").notNull(),
   size: doublePrecision("size").notNull(),
   sizeUnit: text("size_unit").notNull().default("Guntha"),
@@ -34,7 +35,8 @@ export const properties = pgTable("properties", {
 export const insertPropertySchema = z.object({
   title: z.string().min(1),
   description: z.string().min(1),
-  price: z.number().positive(),
+  price: z.union([z.number(), z.string()]).transform(val => typeof val === 'number' ? val.toString() : val),
+  priceUnit: z.string().nullable().default(null),
   location: z.string().min(1),
   size: z.number().positive(),
   sizeUnit: z.string().default("Guntha"),
@@ -51,6 +53,7 @@ export type Property = {
   title: string;
   description: string;
   price: number | string;
+  priceUnit: string | null;
   location: string;
   size: number;
   sizeUnit: string;

@@ -88,6 +88,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Property routes
   apiRouter.get('/properties', async (req: Request, res: Response) => {
     try {
+      console.log('GET /properties - Starting request');
+      
+      // Check database connection first
+      const isConnected = await checkDatabaseConnection();
+      if (!isConnected) {
+        console.error('GET /properties - Database connection failed');
+        return res.status(503).json({ 
+          message: 'Database connection failed',
+          details: 'Unable to establish database connection'
+        });
+      }
+      
+      console.log('GET /properties - Database connection successful, fetching properties...');
       const { type, featured } = req.query;
       
       let properties;
@@ -99,9 +112,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         properties = await storage.getAllProperties();
       }
       
+      console.log('GET /properties - Properties fetched:', properties ? properties.length : 0);
       res.json(properties);
     } catch (error) {
-      res.status(500).json({ message: 'Failed to fetch properties' });
+      console.error('GET /properties - Error:', {
+        error,
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
+      res.status(500).json({ 
+        message: 'Failed to fetch properties',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 

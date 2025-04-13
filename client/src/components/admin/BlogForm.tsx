@@ -68,15 +68,15 @@ const BlogForm = ({ blogPost, mode, onSuccess }: BlogFormProps) => {
 
   const createMutation = useMutation({
     mutationFn: async (values: BlogFormValues) => {
-      const response = await apiRequest("POST", "/api/blogs", values, getAuthHeader());
-      return response.json();
+      const response = await apiRequest("POST", "blogs", values, getAuthHeader());
+      return response;
     },
     onSuccess: () => {
       toast({
         title: "Success",
         description: "Blog post created successfully",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/blogs'] });
+      queryClient.invalidateQueries({ queryKey: ['blogs'] });
       setSubmitting(false);
       form.reset();
       if (onSuccess) onSuccess();
@@ -84,7 +84,7 @@ const BlogForm = ({ blogPost, mode, onSuccess }: BlogFormProps) => {
     onError: (error) => {
       toast({
         title: "Error",
-        description: "Failed to create blog post",
+        description: error instanceof Error ? error.message : "Failed to create blog post",
         variant: "destructive",
       });
       setSubmitting(false);
@@ -94,22 +94,22 @@ const BlogForm = ({ blogPost, mode, onSuccess }: BlogFormProps) => {
   const updateMutation = useMutation({
     mutationFn: async (values: BlogFormValues) => {
       if (!blogPost?.id) throw new Error("Blog post ID is required for updating");
-      const response = await apiRequest("PUT", `/api/blogs/${blogPost.id}`, values, getAuthHeader());
-      return response.json();
+      const response = await apiRequest("PUT", `blogs/${blogPost.id}`, values, getAuthHeader());
+      return response;
     },
     onSuccess: () => {
       toast({
         title: "Success",
         description: "Blog post updated successfully",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/blogs'] });
+      queryClient.invalidateQueries({ queryKey: ['blogs'] });
       setSubmitting(false);
       if (onSuccess) onSuccess();
     },
     onError: (error) => {
       toast({
         title: "Error",
-        description: "Failed to update blog post",
+        description: error instanceof Error ? error.message : "Failed to update blog post",
         variant: "destructive",
       });
       setSubmitting(false);

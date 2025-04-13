@@ -25,15 +25,14 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Admin Header */}
-      <header className="bg-white border-b shadow-sm sticky top-0 z-50">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between py-4">
-            <Link href="/admin/dashboard">
-              <div className="flex items-center">
-                <Logo />
-                <span className="text-sm font-normal ml-2 text-gray-500">Admin</span>
+      <header className="bg-white shadow">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex h-16 justify-between">
+            <div className="flex">
+              <div className="flex flex-shrink-0 items-center">
+                <Logo wrapInLink={false} />
               </div>
-            </Link>
+            </div>
             
             <div className="flex items-center gap-3">
               <Link href="/">

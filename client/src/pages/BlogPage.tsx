@@ -11,7 +11,7 @@ const BlogPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   
   const { data: blogPosts, isLoading, error } = useQuery<BlogPost[]>({
-    queryKey: ['/api/blogs'],
+    queryKey: ['blogs'],
   });
   
   // Filter blog posts based on search term

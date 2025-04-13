@@ -14,7 +14,7 @@ const BlogDetailPage = () => {
   const blogId = params?.id ? parseInt(params.id) : 0;
 
   const { data: blogPost, isLoading, error } = useQuery<BlogPost>({
-    queryKey: [`/api/blogs/${blogId}`],
+    queryKey: [`blogs/${blogId}`],
     enabled: !!blogId,
   });
 

@@ -38,25 +38,29 @@ const AdminProperties = () => {
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   
   const { data: properties, isLoading, error } = useQuery<Property[]>({
-    queryKey: ['/api/properties'],
+    queryKey: ['properties'],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "properties");
+      return response;
+    },
   });
   
   const deletePropertyMutation = useMutation({
     mutationFn: async (id: number) => {
-      const response = await apiRequest("DELETE", `/api/properties/${id}`, undefined, getAuthHeader());
-      return response.json();
+      const response = await apiRequest("DELETE", `properties/${id}`, undefined, getAuthHeader());
+      return response;
     },
     onSuccess: () => {
       toast({
         title: "Success",
         description: "Property deleted successfully",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/properties'] });
+      queryClient.invalidateQueries({ queryKey: ['properties'] });
     },
-    onError: () => {
+    onError: (error) => {
       toast({
         title: "Error",
-        description: "Failed to delete property",
+        description: error instanceof Error ? error.message : "Failed to delete property",
         variant: "destructive",
       });
     },
@@ -87,7 +91,10 @@ const AdminProperties = () => {
   };
   
   // Format price in Indian currency format
-  const formatPrice = (price: number) => {
+  const formatPrice = (price: string | number) => {
+    if (typeof price === 'string') {
+      return price;
+    }
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR',

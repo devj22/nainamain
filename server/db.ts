@@ -3,14 +3,21 @@ import { drizzle } from 'drizzle-orm/neon-http';
 import { sql } from 'drizzle-orm';
 import * as schema from '../shared/schema.js';
 
+// Use DATABASE_URL from environment or fallback to development URL
 const DATABASE_URL = process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_ASLcolZjzh70@ep-white-unit-a872j29f-pooler.eastus2.azure.neon.tech/neondb?sslmode=require';
 
 let dbInstance: ReturnType<typeof drizzle> | null = null;
 
 export function getDb() {
   if (!dbInstance) {
-    const sql = neon(DATABASE_URL);
-    dbInstance = drizzle(sql, { schema });
+    try {
+      const sql = neon(DATABASE_URL);
+      dbInstance = drizzle(sql, { schema });
+      console.log('Database instance created successfully');
+    } catch (error) {
+      console.error('Failed to initialize database connection:', error);
+      throw error;
+    }
   }
   return dbInstance;
 }
@@ -22,9 +29,14 @@ export async function checkDatabaseConnection(): Promise<boolean> {
   try {
     // Try to query the database
     await db.execute(sql`SELECT 1`);
+    console.log('Database connection successful');
     return true;
   } catch (error) {
-    console.error('Database connection check failed:', error);
+    console.error('Database connection check failed:', {
+      error,
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    });
     return false;
   }
 }

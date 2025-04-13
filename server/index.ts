@@ -1,8 +1,20 @@
+import { config } from 'dotenv';
+import { resolve } from 'path';
+
+// Load environment variables from .env file in root directory
+config({ path: resolve(process.cwd(), '.env') });
+
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes.js";
 import { setupVite, serveStatic, log } from "./vite.js";
 import { checkDatabaseConnection } from "./db.js";
 import cors from 'cors';
+
+// Log environment variables (excluding sensitive data)
+console.log('Environment:', {
+  NODE_ENV: process.env.NODE_ENV,
+  DATABASE_URL: process.env.DATABASE_URL ? '[CONFIGURED]' : '[MISSING]'
+});
 
 const app = express();
 

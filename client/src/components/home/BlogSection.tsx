@@ -6,7 +6,7 @@ import { BlogPost } from "@shared/schema";
 
 const BlogSection = () => {
   const { data: blogPosts, isLoading, error } = useQuery<BlogPost[]>({
-    queryKey: ['/api/blogs'],
+    queryKey: ['blogs'],
   });
 
   return (

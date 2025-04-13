@@ -25,7 +25,7 @@ const PropertiesPage = () => {
   });
   
   const { data: properties, isLoading, error } = useQuery<Property[]>({
-    queryKey: ['/api/properties'],
+    queryKey: ['properties'],
     initialData: [], // Initialize with empty array
   });
   

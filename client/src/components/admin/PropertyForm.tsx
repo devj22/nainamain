@@ -29,16 +29,12 @@ import { useToast } from "@/hooks/use-toast";
 import { getAuthHeader } from "@/lib/auth";
 import { Label } from "@/components/ui/label";
 
-// Extend the property schema with validation and form-specific fields
+// Extend the property schema with form-specific fields
 const propertyFormSchema = insertPropertySchema.extend({
-  title: z.string().min(5, "Title must be at least 5 characters"),
-  description: z.string().min(10, "Description must be at least 10 characters"),
-  price: z.union([z.number(), z.string()]),
-  location: z.string().min(3, "Location is required"),
-  size: z.coerce.number().positive("Size must be positive"),
   featuresString: z.string().optional(),
   imagesString: z.string().optional(),
-  videoUrl: z.string().optional(),
+  priceUnit: z.string(),
+  videoUrl: z.string(),
 }).omit({ features: true, images: true });
 
 type PropertyFormValues = z.infer<typeof propertyFormSchema>;
@@ -76,7 +72,7 @@ const PropertyForm = ({ property, mode, onSuccess }: PropertyFormProps) => {
     defaultValues: {
       title: property?.title || "",
       description: property?.description || "",
-      price: property?.price || (isTextPrice ? "Call for Price" : 0),
+      price: property?.price?.toString() || (isTextPrice ? "Call for Price" : "0"),
       priceUnit: property?.priceUnit || "",
       location: property?.location || "",
       size: property?.size || 0,
@@ -94,7 +90,7 @@ const PropertyForm = ({ property, mode, onSuccess }: PropertyFormProps) => {
       form.reset({
         title: property.title,
         description: property.description,
-        price: property.price,
+        price: property.price.toString(),
         priceUnit: property.priceUnit || "",
         location: property.location,
         size: property.size,
@@ -102,7 +98,7 @@ const PropertyForm = ({ property, mode, onSuccess }: PropertyFormProps) => {
         featuresString: featuresToString(property.features),
         imagesString: imagesToString(property.images),
         videoUrl: property.videoUrl || "",
-        isFeatured: property.isFeatured || false,
+        isFeatured: property.isFeatured,
         propertyType: property.propertyType,
       });
       setIsTextPrice(property.price === "Call for Price" || typeof property.price === 'string');
@@ -115,25 +111,28 @@ const PropertyForm = ({ property, mode, onSuccess }: PropertyFormProps) => {
         ...data,
         features: parseStringToArray(data.featuresString),
         images: parseStringToArray(data.imagesString),
+        priceUnit: data.priceUnit || null,
+        videoUrl: data.videoUrl || null,
+        price: isTextPrice ? data.price : Number(data.price),
       };
       delete (propertyData as any).featuresString;
       delete (propertyData as any).imagesString;
 
-      const response = await apiRequest("POST", "/api/properties", propertyData, getAuthHeader());
-      return response.json();
+      const response = await apiRequest("POST", "properties", propertyData, getAuthHeader());
+      return response;
     },
     onSuccess: () => {
       toast({
         title: "Success",
         description: "Property created successfully",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/properties'] });
+      queryClient.invalidateQueries({ queryKey: ['properties'] });
       onSuccess?.();
     },
-    onError: () => {
+    onError: (error) => {
       toast({
         title: "Error",
-        description: "Failed to create property",
+        description: error instanceof Error ? error.message : "Failed to create property",
         variant: "destructive",
       });
     },
@@ -141,31 +140,33 @@ const PropertyForm = ({ property, mode, onSuccess }: PropertyFormProps) => {
 
   const updatePropertyMutation = useMutation({
     mutationFn: async (data: PropertyFormValues) => {
-      if (!property) throw new Error("No property to update");
-
+      if (!property?.id) throw new Error("Property ID is required for update");
       const propertyData = {
         ...data,
         features: parseStringToArray(data.featuresString),
         images: parseStringToArray(data.imagesString),
+        priceUnit: data.priceUnit || null,
+        videoUrl: data.videoUrl || null,
+        price: isTextPrice ? data.price : Number(data.price),
       };
       delete (propertyData as any).featuresString;
       delete (propertyData as any).imagesString;
 
-      const response = await apiRequest("PUT", `/api/properties/${property.id}`, propertyData, getAuthHeader());
-      return response.json();
+      const response = await apiRequest("PUT", `properties/${property.id}`, propertyData, getAuthHeader());
+      return response;
     },
     onSuccess: () => {
       toast({
         title: "Success",
         description: "Property updated successfully",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/properties'] });
+      queryClient.invalidateQueries({ queryKey: ['properties'] });
       onSuccess?.();
     },
-    onError: () => {
+    onError: (error) => {
       toast({
         title: "Error",
-        description: "Failed to update property",
+        description: error instanceof Error ? error.message : "Failed to update property",
         variant: "destructive",
       });
     },
@@ -271,7 +272,8 @@ const PropertyForm = ({ property, mode, onSuccess }: PropertyFormProps) => {
                           <FormControl>
                             <Input 
                               placeholder="e.g., per Guntha, per Acre" 
-                              {...field} 
+                              {...field}
+                              value={field.value || ""}
                             />
                           </FormControl>
                           <FormMessage />
@@ -438,7 +440,8 @@ const PropertyForm = ({ property, mode, onSuccess }: PropertyFormProps) => {
                       <Input 
                         placeholder="https://www.youtube.com/watch?v=VIDEO_ID" 
                         className="w-full"
-                        {...field} 
+                        {...field}
+                        value={field.value || ""}
                       />
                     </FormControl>
                     <div className="text-sm text-muted-foreground mt-2 p-2 bg-gray-50 rounded-md border border-gray-100">

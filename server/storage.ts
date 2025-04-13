@@ -128,7 +128,7 @@ export class PostgresStorage implements IStorage {
       videoUrl: insertProperty.videoUrl || null,
       isFeatured: insertProperty.isFeatured || false,
       sizeUnit: insertProperty.sizeUnit || "Guntha",
-      price: typeof insertProperty.price === 'string' ? 0 : insertProperty.price
+      price: typeof insertProperty.price === 'number' ? insertProperty.price.toString() : insertProperty.price
     };
 
     const result = await db.insert(properties).values(propertyData).returning();
@@ -152,7 +152,7 @@ export class PostgresStorage implements IStorage {
       videoUrl: updateData.videoUrl || null,
       isFeatured: updateData.isFeatured || undefined,
       sizeUnit: updateData.sizeUnit || undefined,
-      price: typeof updateData.price === 'string' ? 0 : updateData.price
+      price: updateData.price !== undefined ? (typeof updateData.price === 'number' ? updateData.price.toString() : updateData.price) : undefined
     };
 
     const result = await db.update(properties)
