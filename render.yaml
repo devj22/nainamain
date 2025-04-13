@@ -6,4 +6,12 @@ services:
     startCommand: npm start
     envVars:
       - key: NODE_ENV
-        value: production 
+        value: production
+    buildFilter:
+      paths:
+        - client/**/*
+        - server/**/*
+        - shared/**/*
+        - package.json
+        - tsconfig*.json
+        - vite.config.ts 
